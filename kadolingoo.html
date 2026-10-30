@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="tr" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kadolingo Watch Party</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Google Fonts: Playfair Display & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            darkbg: '#161a1e',
+            darkpanel: '#20252c',
+            darkcard: '#293039',
+            burgundy: {
+              50: '#fdf2f4',
+              100: '#fbe5e9',
+              200: '#f7ced6',
+              500: '#c23b5c',
+              600: '#9b223e',
+              700: '#7a1c31',
+              800: '#63182a',
+              900: '#46101c',
+            }
+          },
+          fontFamily: {
+            serif: ['Playfair Display', 'serif'],
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #161a1e;
+      color: #e2e8f0;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow-x: hidden;
+    }
+
+    /* Dynamic Random Kardelen Flower Background Elements */
+    #snowdropCanvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .random-flower {
+      position: absolute;
+      transform-origin: center center;
+    }
+
+    /* 3D Card Flip Styling */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      text-align: center;
+      transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      transform-style: preserve-3d;
+    }
+
+    .card-flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+      border-radius: 1.25rem;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+    }
+
+    /* Drawer Side-Slide Animation */
+    .drawer-overlay {
+      transition: opacity 0.3s ease-in-out;
+    }
+    .drawer-content {
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #1e242c;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #4a1523;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #7a1c31;
+    }
+  </style>
+</head>
+<body class="min-h-full flex flex-col antialiased selection:bg-burgundy-700 selection:text-white relative">
+
+  <!-- Random Scattered Background Kardelen Flowers Container -->
+  <div id="snowdropCanvas"></div>
+
+  <!-- Main Application Wrapper -->
+  <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 w-full flex-grow flex flex-col">
+    
+    <!-- Top Header Navigation -->
+    <header class="flex items-center justify-between gap-4 mb-10 pb-6 border-b border-gray-800/80">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-burgundy-600 to-burgundy-900 flex items-center justify-center text-white shadow-lg shadow-burgundy-900/40 border border-burgundy-500/30">
+          <i class="fa-solid fa-film text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-serif text-2xl sm:text-3xl font-bold text-white tracking-tight leading-none">
+            Kadolingo Watch Party
+          </h1>
+          <p class="text-xs text-gray-400 mt-1 font-light">
+            Birlikte film izleme & karar verme portalı ✨
+          </p>
+        </div>
+      </div>
+
+      <!-- Top Right Actions: Watched Drawer Trigger & Stats -->
+      <div class="flex items-center gap-2">
+        <button 
+          onclick="openStatsModal()"
+          title="Sinema Karnesi / İstatistikler"
+          class="bg-darkpanel hover:bg-darkcard text-amber-400 p-2.5 rounded-xl border border-gray-700/60 shadow-md hover:border-amber-500/50 transition-all duration-200 text-sm"
+        >
+          <i class="fa-solid fa-chart-pie"></i>
+        </button>
+        <button 
+          onclick="toggleWatchedDrawer(true)"
+          class="group relative inline-flex items-center gap-2.5 bg-darkpanel hover:bg-darkcard text-gray-200 hover:text-white px-4 py-2.5 rounded-xl border border-gray-700/60 shadow-md hover:border-burgundy-500/50 transition-all duration-200 text-xs sm:text-sm font-semibold"
+        >
+          <i class="fa-solid fa-clock-rotate-left text-burgundy-500 group-hover:scale-110 transition-transform"></i>
+          <span>İzlenenler Sepeti</span>
+          <span id="watchedBadge" class="bg-burgundy-700 text-white text-[11px] px-2 py-0.5 rounded-full font-bold">0</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Movie Search / Add Input -->
+    <section class="max-w-2xl mx-auto w-full mb-10">
+      <div class="bg-darkpanel/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-xl border border-gray-800 relative">
+        <label for="movieSearchInput" class="block text-xs font-bold uppercase tracking-wider text-gray-300 mb-2 px-1 flex items-center justify-between">
+          <span><i class="fa-solid fa-magnifying-glass mr-1.5 text-burgundy-500"></i> Film Ara veya Ekle</span>
+          <span class="text-[10px] text-gray-400 font-normal">OMDb & Otomatik Arama</span>
+        </label>
+        
+        <div class="relative flex items-center">
+          <input 
+            type="text" 
+            id="movieSearchInput" 
+            placeholder="Film adı yazın (ör. Amélie, Interstellar, Dune)..." 
+            class="w-full bg-darkbg border border-gray-700 text-white placeholder-gray-500 text-sm sm:text-base rounded-xl px-4 py-3.5 pr-12 focus:outline-none focus:ring-2 focus:ring-burgundy-600 focus:border-transparent transition-all shadow-inner"
+            autocomplete="off"
+          >
+          <div id="searchSpinner" class="hidden absolute right-4 text-burgundy-500 animate-spin">
+            <i class="fa-solid fa-circle-notch"></i>
+          </div>
+        </div>
+
+        <!-- Auto-Suggest Dropdown -->
+        <div id="searchResults" class="hidden absolute left-0 right-0 top-full mt-2 bg-darkpanel rounded-xl shadow-2xl border border-gray-700 overflow-hidden z-50 max-h-80 overflow-y-auto divide-y divide-gray-800">
+        </div>
+      </div>
+    </section>
+
+    <!-- Selection Triggers: 3 Cards or Quick Roll -->
+    <section class="text-center mb-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+      <button 
+        id="pickMoviesBtn" 
+        onclick="openSelectionModal()"
+        class="group relative inline-flex items-center justify-center gap-3 bg-gradient-to-r from-burgundy-800 via-burgundy-700 to-burgundy-900 hover:from-burgundy-700 hover:to-burgundy-800 text-white font-medium text-sm sm:text-base px-6 py-3.5 rounded-xl shadow-2xl shadow-burgundy-900/30 hover:shadow-burgundy-700/40 transform hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 border border-burgundy-500/40 w-full sm:w-auto"
+      >
+        <i class="fa-solid fa-wand-magic-sparkles text-amber-300 group-hover:rotate-12 transition-transform"></i>
+        <span>Rastgele 3 Film Seç (Şans Kartları)</span>
+        <span id="watchlistBadge" class="ml-1 bg-black/40 text-cream-100 text-xs px-2.5 py-0.5 rounded-full font-semibold border border-white/10">0</span>
+      </button>
+
+      <button 
+        onclick="quickPickMovie()"
+        class="inline-flex items-center justify-center gap-2.5 bg-darkpanel hover:bg-darkcard text-amber-300 font-medium text-sm sm:text-base px-6 py-3.5 rounded-xl border border-amber-500/30 hover:border-amber-400/60 shadow-lg transition-all w-full sm:w-auto"
+      >
+        <i class="fa-solid fa-dice-five text-amber-400"></i>
+        <span>Hızlı Karar Zarı 🎲</span>
+      </button>
+    </section>
+
+    <!-- Active Watchlist Section -->
+    <section class="mb-12 flex-grow">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-3 border-b border-gray-800">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-layer-group text-burgundy-500 text-lg"></i>
+          <h2 class="font-serif text-2xl font-bold text-white">İzleme Listeniz</h2>
+        </div>
+        
+        <div class="flex items-center gap-3">
+          <!-- Filter/Search in Watchlist -->
+          <input 
+            type="text" 
+            id="filterWatchlistInput"
+            oninput="filterWatchlist()" 
+            placeholder="Listede ara..." 
+            class="bg-darkpanel border border-gray-700/80 text-xs text-white px-3 py-1.5 rounded-lg focus:outline-none focus:border-burgundy-500 w-36 sm:w-48"
+          >
+          <button 
+            onclick="clearWatchlist()" 
+            class="text-xs font-semibold text-gray-400 hover:text-rose-400 flex items-center gap-1 transition-colors px-2 py-1 rounded"
+          >
+            <i class="fa-regular fa-trash-can"></i> Temizle
+          </button>
+        </div>
+      </div>
+
+      <!-- Movies Grid -->
+      <div id="watchlistGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden text-center py-16 px-4 bg-darkpanel/40 rounded-2xl border border-dashed border-gray-800">
+        <div class="w-16 h-16 bg-burgundy-900/40 text-burgundy-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl border border-burgundy-700/30">
+          <i class="fa-solid fa-clapperboard"></i>
+        </div>
+        <h3 class="font-serif text-lg font-bold text-white mb-1">İzleme Listeniz Henüz Boş</h3>
+        <p class="text-xs text-gray-400 max-w-sm mx-auto">Yukarıdaki arama çubuğundan film ekleyerek listenizi doldurabilirsiniz.</p>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-auto text-center py-6 border-t border-gray-800/80 text-xs text-gray-400">
+      <p>Kadolingo Watch Party • Sinema Keyfi ❤️</p>
+    </footer>
+
+  </div>
+
+
+  <!-- ================= SELECTION MODAL (3 CLOSED CARDS) ================= -->
+  <div id="selectionModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-darkpanel border border-gray-700 rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl relative my-auto">
+      
+      <!-- Close Button -->
+      <button 
+        onclick="closeSelectionModal()" 
+        class="absolute top-4 right-4 w-10 h-10 bg-darkcard hover:bg-gray-700 text-gray-300 rounded-full flex items-center justify-center transition-all shadow-md z-20 border border-gray-600"
+      >
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="text-center mb-8">
+        <span class="inline-block px-3 py-1 bg-burgundy-900/60 text-burgundy-200 border border-burgundy-700/40 text-xs font-semibold rounded-full mb-2">
+          Kısmetinizde Hangi Film Var?
+        </span>
+        <h3 class="font-serif text-2xl sm:text-3xl font-bold text-white">
+          Kartlardan Birini Seçin!
+        </h3>
+        <p id="modalSubtext" class="text-xs sm:text-sm text-gray-400 mt-1">
+          Aşağıdaki 3 kapalı karttan birine dokunarak filminizi açığa çıkarın.
+        </p>
+      </div>
+
+      <!-- 3 Closed Cards Grid -->
+      <div id="cardsContainer" class="grid grid-cols-1 sm:grid-cols-3 gap-6 min-h-[380px] max-w-3xl mx-auto">
+      </div>
+
+      <!-- Result Reveal & Movie Info Banner -->
+      <div id="resultBanner" class="hidden mt-8 p-6 bg-darkcard rounded-2xl border border-burgundy-600/40 shadow-2xl text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 bg-burgundy-900/60 text-amber-300 rounded-full mb-3 border border-burgundy-500/40">
+          <i class="fa-solid fa-popcorn text-2xl"></i>
+        </div>
+        
+        <h4 id="resultTitle" class="font-serif text-xl sm:text-2xl font-bold text-white mb-2"></h4>
+        
+        <!-- Detailed Info Banner -->
+        <div id="selectedMovieDetails" class="my-4 max-w-xl mx-auto bg-darkbg/90 p-5 rounded-2xl text-left border border-gray-700 text-xs text-gray-300 space-y-3">
+        </div>
+
+        <div class="mt-5 flex flex-wrap items-center justify-center gap-3">
+          <button 
+            onclick="watchTrailer(activeChosenMovie?.title)" 
+            class="bg-rose-900/60 hover:bg-rose-800 text-rose-200 border border-rose-700/50 font-medium text-xs sm:text-sm px-4 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2"
+          >
+            <i class="fa-brands fa-youtube text-rose-400"></i> Fragman İzle
+          </button>
+          <button 
+            onclick="markSelectedAsWatched()" 
+            class="bg-emerald-700 hover:bg-emerald-600 text-white font-medium text-xs sm:text-sm px-5 py-2.5 rounded-xl transition-all shadow-md flex items-center gap-2"
+          >
+            <i class="fa-solid fa-check"></i> İzledim Olarak İşaretle
+          </button>
+          <button 
+            onclick="closeSelectionModal()" 
+            class="bg-burgundy-700 hover:bg-burgundy-600 text-white font-medium text-xs sm:text-sm px-5 py-2.5 rounded-xl transition-all shadow-md"
+          >
+            Tamamdır
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ================= STATS MODAL ================= -->
+  <div id="statsModal" class="fixed inset-0 z-50 hidden bg-black/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-darkpanel border border-gray-700 rounded-3xl max-w-md w-full p-6 shadow-2xl relative">
+      <button 
+        onclick="closeStatsModal()" 
+        class="absolute top-4 right-4 w-9 h-9 bg-darkcard hover:bg-gray-700 text-gray-300 rounded-full flex items-center justify-center border border-gray-600"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="text-center mb-6">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-2 text-xl border border-amber-500/30">
+          <i class="fa-solid fa-award"></i>
+        </div>
+        <h3 class="font-serif text-2xl font-bold text-white">Sinema Karneniz 🍿</h3>
+        <p class="text-xs text-gray-400">Birlikte biriktirdiğiniz istatistikler</p>
+      </div>
+
+      <div class="space-y-3">
+        <div class="bg-darkcard p-3.5 rounded-xl border border-gray-700 flex justify-between items-center">
+          <span class="text-xs text-gray-300"><i class="fa-solid fa-check text-emerald-400 mr-2"></i>Toplam İzlenen Film</span>
+          <span id="statTotalWatched" class="font-bold text-white text-sm">0</span>
+        </div>
+        <div class="bg-darkcard p-3.5 rounded-xl border border-gray-700 flex justify-between items-center">
+          <span class="text-xs text-gray-300"><i class="fa-solid fa-star text-amber-400 mr-2"></i>Ortalama Puanınız</span>
+          <span id="statAvgRating" class="font-bold text-amber-400 text-sm">0.0 / 5</span>
+        </div>
+        <div class="bg-darkcard p-3.5 rounded-xl border border-gray-700 flex justify-between items-center">
+          <span class="text-xs text-gray-300"><i class="fa-solid fa-clock text-burgundy-400 mr-2"></i>Tahmini İzleme Süresi</span>
+          <span id="statTotalHours" class="font-bold text-white text-sm">0 Saat</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ================= WATCHED MOVIES SIDE DRAWER ================= -->
+  <div id="watchedDrawerOverlay" onclick="toggleWatchedDrawer(false)" class="drawer-overlay fixed inset-0 z-50 bg-black/70 backdrop-blur-sm opacity-0 pointer-events-none"></div>
+
+  <aside id="watchedDrawer" class="drawer-content fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-darkpanel border-l border-gray-800 shadow-2xl flex flex-col transform translate-x-full">
+    
+    <!-- Drawer Header -->
+    <div class="p-5 border-b border-gray-800 flex items-center justify-between bg-darkbg/50">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-burgundy-900/70 text-burgundy-300 flex items-center justify-center text-sm border border-burgundy-700/40">
+          <i class="fa-solid fa-box-archive"></i>
+        </div>
+        <div>
+          <h3 class="font-serif font-bold text-lg text-white">İzlenenler Sepeti</h3>
+          <p class="text-[11px] text-gray-400">Tamamladığınız filmler & anılarınız</p>
+        </div>
+      </div>
+      
+      <button 
+        onclick="toggleWatchedDrawer(false)" 
+        class="w-8 h-8 rounded-lg bg-darkcard text-gray-400 hover:text-white flex items-center justify-center transition-colors border border-gray-700"
+      >
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Drawer Body / Vertical List -->
+    <div id="watchedListContainer" class="flex-grow p-4 overflow-y-auto space-y-4">
+      <!-- Dynamically filled with watched movies vertical cards -->
+    </div>
+
+  </aside>
+
+
+  <!-- Toast Notification System -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-darkcard text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-gray-700">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMsg" class="text-xs sm:text-sm font-medium"></span>
+  </div>
+
+
+  <!-- Application Script -->
+  <script>
+    // Initial Default Movies
+    const DEFAULT_MOVIES = [
+      {
+        id: "tt7392238",
+        title: "Green Book",
+        year: "2018",
+        runtime: "2s 10dk",
+        imdbRating: "8.2",
+        plot: "Ünlü Amerikalı Siyah piyanist Don Shirley ve onun şoförü/koruması olarak işe alınan İtalyan asıllı Frank 'Tony Lip' Vallelonga'nın 1960'lardaki Güney turu hikayesi.",
+        poster: "https://m.media-amazon.com/images/M/MVBMTzAyOTM2MDgxMF5BMl5BanBnXkFtZTgwMzkxMzU3NjM@._V1_SX300.jpg",
+        genre: "Biyografi, Drama, Komedi"
+      },
+      {
+        id: "tt0816692",
+        title: "Interstellar",
+        year: "2014",
+        runtime: "2s 49dk",
+        imdbRating: "8.7",
+        plot: "İnsanlığın sonunun yaklaştığı bir gelecekte, bir grup kaşif insan türünün devamını sağlamak amacıyla yaşanabilir yeni bir gezegen bulmak için solucan deliğinden geçer.",
+        poster: "https://m.media-amazon.com/images/M/MVBMT3Y4MjA1MzA3NV5BMl5BanBnXkFtZTgwMDUyMTE2MjE@._V1_SX300.jpg",
+        genre: "Bilim Kurgu, Macera"
+      },
+      {
+        id: "tt0338013",
+        title: "Eternal Sunshine of the Spotless Mind",
+        year: "2004",
+        runtime: "1s 48dk",
+        imdbRating: "8.3",
+        plot: "Ayrılan bir çift, birbirleriyle ilgili tüm anılarını tıbbi bir müdahaleyle hafızalarından sildirmeye karar verir. Ancak süreç başladığında aşkın gücü ortaya çıkar.",
+        poster: "https://m.media-amazon.com/images/M/MVBMTM5NjA5MDM1MV5BMl5BanBnXkFtZTcwOTM4NDAwMw@@._V1_SX300.jpg",
+        genre: "Dram, Romantik, Bilim Kurgu"
+      },
+      {
+        id: "tt0814314",
+        title: "Memories of Murder",
+        year: "2003",
+        runtime: "2s 12dk",
+        imdbRating: "8.1",
+        plot: "1986 yılında Güney Kore'de küçük bir kasabada işlenen gizemli cinayetleri çözmeye çalışan iki yerel ve bir başkentli dedektifin sürükleyici mücadelesi.",
+        poster: "https://m.media-amazon.com/images/M/MVBMTMwOTM5NTA1Nl5BMl5BanBnXkFtZTcwOTE2ODkzMQ@@._V1_SX300.jpg",
+        genre: "Suç, Gizem, Dram"
+      }
+    ];
+
+    // Local Storage Keys
+    const WATCHLIST_KEY = 'kadolingo_watchlist_v2';
+    const WATCHED_KEY = 'kadolingo_watched_v2';
+
+    // Application State
+    let watchlist = [];
+    let watchedList = [];
+    let activeChosenMovie = null;
+    let searchDebounceTimer = null;
+
+    // DOM References
+    const watchlistGrid = document.getElementById('watchlistGrid');
+    const emptyState = document.getElementById('emptyState');
+    const searchInput = document.getElementById('movieSearchInput');
+    const searchResults = document.getElementById('searchResults');
+    const searchSpinner = document.getElementById('searchSpinner');
+    const watchlistBadge = document.getElementById('watchlistBadge');
+    const watchedBadge = document.getElementById('watchedBadge');
+
+    const selectionModal = document.getElementById('selectionModal');
+    const cardsContainer = document.getElementById('cardsContainer');
+    const resultBanner = document.getElementById('resultBanner');
+
+    const watchedDrawer = document.getElementById('watchedDrawer');
+    const watchedDrawerOverlay = document.getElementById('watchedDrawerOverlay');
+    const watchedListContainer = document.getElementById('watchedListContainer');
+
+    // On Page Load
+    window.addEventListener('DOMContentLoaded', () => {
+      generateRandomSnowdropBackground();
+      loadAllData();
+      setupSearchListener();
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+          searchResults.classList.add('hidden');
+        }
+      });
+    });
+
+    // Helper: Convert Minutes into "X saat Y dk"
+    function formatRuntime(runtimeStr) {
+      if (!runtimeStr || runtimeStr === "N/A") return "Bilinmiyor";
+      if (runtimeStr.includes("s") || runtimeStr.includes("dk")) return runtimeStr;
+      
+      const mins = parseInt(runtimeStr, 10);
+      if (isNaN(mins)) return runtimeStr;
+
+      const hrs = Math.floor(mins / 60);
+      const remainingMins = mins % 60;
+
+      if (hrs > 0 && remainingMins > 0) {
+        return `${hrs}s ${remainingMins}dk`;
+      } else if (hrs > 0) {
+        return `${hrs} saat`;
+      } else {
+        return `${remainingMins} dakika`;
+      }
+    }
+
+    // Generate Dynamic Random Snowdrop SVG Icons in Background
+    function generateRandomSnowdropBackground() {
+      const container = document.getElementById('snowdropCanvas');
+      container.innerHTML = '';
+      const flowerCount = 18;
+
+      for (let i = 0; i < flowerCount; i++) {
+        const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.setAttribute("viewBox", "0 0 100 120");
+        
+        const top = Math.random() * 95;
+        const left = Math.random() * 95;
+        const scale = 0.5 + Math.random() * 1.2;
+        const rotation = Math.floor(Math.random() * 360);
+        const opacity = (0.02 + Math.random() * 0.05).toFixed(3);
+        const size = Math.floor(60 + Math.random() * 120);
+
+        svg.classList.add('random-flower');
+        svg.style.top = `${top}%`;
+        svg.style.left = `${left}%`;
+        svg.style.width = `${size}px`;
+        svg.style.height = `${size}px`;
+        svg.style.opacity = opacity;
+        svg.style.transform = `scale(${scale}) rotate(${rotation}deg)`;
+        svg.style.fill = "#ffffff";
+
+        svg.innerHTML = `
+          <path d="M50,10 C55,40 20,60 15,100 C12,120 25,140 30,145 C28,130 25,110 35,90 C45,70 65,50 50,10 Z" />
+          <path d="M30,80 C15,85 5,95 8,110 C12,120 25,115 32,95 Z" />
+          <path d="M36,88 C45,95 55,110 50,122 C45,130 35,120 34,102 Z" />
+        `;
+
+        container.appendChild(svg);
+      }
+    }
+
+    // Persistence Logic
+    function loadAllData() {
+      const savedWatchlist = localStorage.getItem(WATCHLIST_KEY);
+      const savedWatched = localStorage.getItem(WATCHED_KEY);
+
+      if (savedWatchlist !== null) {
+        try { watchlist = JSON.parse(savedWatchlist); } catch(e) { watchlist = []; }
+      } else {
+        watchlist = [...DEFAULT_MOVIES];
+      }
+
+      if (savedWatched !== null) {
+        try { watchedList = JSON.parse(savedWatched); } catch(e) { watchedList = []; }
+      } else {
+        watchedList = [];
+      }
+
+      saveWatchlist();
+      saveWatched();
+      renderWatchlist();
+      renderWatchedDrawer();
+    }
+
+    function saveWatchlist() {
+      localStorage.setItem(WATCHLIST_KEY, JSON.stringify(watchlist));
+      watchlistBadge.textContent = watchlist.length;
+    }
+
+    function saveWatched() {
+      localStorage.setItem(WATCHED_KEY, JSON.stringify(watchedList));
+      watchedBadge.textContent = watchedList.length;
+    }
+
+    // Filter Watchlist Functionality
+    function filterWatchlist() {
+      const query = document.getElementById('filterWatchlistInput').value.toLowerCase().trim();
+      const filtered = watchlist.filter(m => m.title.toLowerCase().includes(query));
+      renderWatchlist(filtered);
+    }
+
+    // Render Watchlist Grid
+    function renderWatchlist(listToRender = watchlist) {
+      watchlistGrid.innerHTML = '';
+
+      if (listToRender.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      listToRender.forEach((movie) => {
+        const card = document.createElement('div');
+        card.className = "group relative bg-darkpanel rounded-2xl overflow-hidden shadow-lg border border-gray-800 hover:border-burgundy-500/50 transition-all duration-300 flex flex-col";
+        
+        const posterSrc = (movie.poster && movie.poster !== "N/A") 
+          ? movie.poster 
+          : "https://placehold.co/300x450/20252c/ffffff?text=Poster+Yok";
+
+        card.innerHTML = `
+          <div class="relative aspect-[2/3] overflow-hidden bg-black/40">
+            <img 
+              src="${posterSrc}" 
+              alt="${escapeHtml(movie.title)}" 
+              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              onerror="this.onerror=null; this.src='https://placehold.co/300x450/20252c/ffffff?text=Poster+Yok';"
+            />
+            
+            <!-- Quick Actions Overlay -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-between">
+              <div class="flex justify-between items-center">
+                <button 
+                  onclick="moveToWatched('${movie.id}')" 
+                  title="İzledim Olarak İşaretle"
+                  class="w-8 h-8 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-md transition-all"
+                >
+                  <i class="fa-solid fa-check text-xs"></i>
+                </button>
+                <button 
+                  onclick="removeFromWatchlist('${movie.id}')" 
+                  title="Listeden Çıkar"
+                  class="w-8 h-8 bg-rose-600 hover:bg-rose-500 text-white rounded-full flex items-center justify-center shadow-md transition-all"
+                >
+                  <i class="fa-solid fa-xmark text-xs"></i>
+                </button>
+              </div>
+              
+              <div class="space-y-1">
+                <button 
+                  onclick="watchTrailer('${escapeHtml(movie.title)}')"
+                  class="w-full bg-black/60 hover:bg-rose-900/80 text-rose-300 text-[10px] py-1 rounded border border-rose-500/30 flex items-center justify-center gap-1 transition-colors"
+                >
+                  <i class="fa-brands fa-youtube"></i> Fragman
+                </button>
+                <span class="text-[10px] text-gray-300 font-medium line-clamp-1 block text-center">${escapeHtml(movie.genre || '')}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-3 bg-darkpanel flex-grow flex flex-col justify-between">
+            <div>
+              <h3 class="font-serif font-bold text-sm text-white leading-tight line-clamp-1 group-hover:text-burgundy-400 transition-colors" title="${escapeHtml(movie.title)}">
+                ${escapeHtml(movie.title)}
+              </h3>
+              <div class="flex items-center justify-between mt-1 text-[11px] font-medium text-gray-400">
+                <span>${movie.year || ''}</span>
+                <span class="text-amber-400"><i class="fa-solid fa-clock mr-1 text-[10px]"></i>${formatRuntime(movie.runtime)}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        watchlistGrid.appendChild(card);
+      });
+    }
+
+    // Generate Half-Star Interactive Element
+    function renderHalfStarRating(movieId, currentRating) {
+      let html = `<div class="flex items-center gap-1 text-amber-400 text-xs">`;
+      for (let star = 1; star <= 5; star++) {
+        const fullValue = star;
+        const halfValue = star - 0.5;
+
+        let starClass = 'fa-regular fa-star';
+        if (currentRating >= fullValue) {
+          starClass = 'fa-solid fa-star';
+        } else if (currentRating >= halfValue) {
+          starClass = 'fa-solid fa-star-half-stroke';
+        }
+
+        html += `
+          <div class="relative cursor-pointer group flex items-center">
+            <!-- Left Half -->
+            <span onclick="rateWatchedMovie('${movieId}', ${halfValue})" class="w-2 h-4 inline-block z-10" title="${halfValue} Puan"></span>
+            <!-- Right Half -->
+            <span onclick="rateWatchedMovie('${movieId}', ${fullValue})" class="w-2 h-4 inline-block z-10" title="${fullValue} Puan"></span>
+            <!-- Visual Star Icon -->
+            <i class="${starClass} absolute inset-0 pointer-events-none group-hover:scale-125 transition-transform"></i>
+          </div>
+        `;
+      }
+      html += `<span class="ml-1.5 text-[11px] font-bold text-amber-300">${currentRating > 0 ? currentRating.toFixed(1) : 'Puan Ver'}</span></div>`;
+      return html;
+    }
+
+    // Render Watched Drawer (Vertical Items with Notes and Half-Star Rating)
+    function renderWatchedDrawer() {
+      watchedListContainer.innerHTML = '';
+
+      if (watchedList.length === 0) {
+        watchedListContainer.innerHTML = `
+          <div class="text-center py-16 px-4 text-gray-400">
+            <i class="fa-solid fa-box-open text-3xl mb-2 text-gray-600"></i>
+            <p class="text-xs">Henüz izlenenler sepetinizde film yok.</p>
+          </div>
+        `;
+        return;
+      }
+
+      watchedList.forEach((movie) => {
+        const item = document.createElement('div');
+        item.className = "bg-darkcard border border-gray-700/80 rounded-2xl p-3.5 flex flex-col gap-3 shadow-md";
+
+        const posterSrc = (movie.poster && movie.poster !== "N/A") 
+          ? movie.poster 
+          : "https://placehold.co/100x150/20252c/ffffff?text=Poster";
+
+        const rating = movie.rating || 0;
+        const note = movie.note || '';
+
+        item.innerHTML = `
+          <div class="flex gap-3">
+            <img src="${posterSrc}" alt="${escapeHtml(movie.title)}" class="w-16 h-24 object-cover rounded-xl bg-black/50 border border-gray-700 flex-shrink-0">
+            
+            <div class="flex-grow min-w-0">
+              <div class="flex items-start justify-between gap-1">
+                <h4 class="font-serif font-bold text-sm text-white truncate">${escapeHtml(movie.title)}</h4>
+                <button 
+                  onclick="removeFromWatched('${movie.id}')" 
+                  title="Sepetten Sil"
+                  class="text-gray-400 hover:text-rose-400 text-xs p-1"
+                >
+                  <i class="fa-regular fa-trash-can"></i>
+                </button>
+              </div>
+              <p class="text-[11px] text-gray-400">${movie.year || ''} • ${formatRuntime(movie.runtime)}</p>
+
+              <!-- Half-Star Interactive Rating Input -->
+              <div class="mt-2">
+                ${renderHalfStarRating(movie.id, rating)}
+              </div>
+            </div>
+          </div>
+
+          <!-- Memory & Note Input -->
+          <div class="space-y-1.5 pt-1 border-t border-gray-700/60">
+            <textarea 
+              id="note-input-${movie.id}"
+              placeholder="Bu film hakkındaki anımız / notumuz..." 
+              class="w-full bg-darkbg border border-gray-700 text-gray-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-burgundy-500 transition-colors resize-none h-16"
+            >${escapeHtml(note)}</textarea>
+            
+            <div class="flex justify-between items-center">
+              <button 
+                onclick="returnToWatchlist('${movie.id}')" 
+                class="text-[10px] text-gray-400 hover:text-white flex items-center gap-1"
+              >
+                <i class="fa-solid fa-rotate-left text-burgundy-400"></i> Listeye Geri Taşı
+              </button>
+              <button 
+                onclick="saveMovieNote('${movie.id}')" 
+                class="bg-burgundy-800 hover:bg-burgundy-700 text-white text-[11px] font-medium px-3 py-1 rounded-lg transition-colors"
+              >
+                Anıyı Kaydet
+              </button>
+            </div>
+          </div>
+        `;
+
+        watchedListContainer.appendChild(item);
+      });
+    }
+
+    // Toggle Watched Drawer Slide-in
+    function toggleWatchedDrawer(show) {
+      if (show) {
+        watchedDrawerOverlay.classList.remove('pointer-events-none', 'opacity-0');
+        watchedDrawerOverlay.classList.add('opacity-100');
+        watchedDrawer.classList.remove('translate-x-full');
+      } else {
+        watchedDrawerOverlay.classList.add('pointer-events-none', 'opacity-0');
+        watchedDrawerOverlay.classList.remove('opacity-100');
+        watchedDrawer.classList.add('translate-x-full');
+      }
+    }
+
+    // Move Movie to Watched
+    function moveToWatched(movieId) {
+      const idx = watchlist.findIndex(m => m.id === movieId);
+      if (idx !== -1) {
+        const movie = watchlist.splice(idx, 1)[0];
+        watchedList.unshift({
+          ...movie,
+          watchedAt: new Date().toISOString(),
+          rating: 0,
+          note: ''
+        });
+        saveWatchlist();
+        saveWatched();
+        renderWatchlist();
+        renderWatchedDrawer();
+        showToast(`"${movie.title}" İzlenenler Sepetine taşındı! 🍿`, "success");
+      }
+    }
+
+    // Move Movie Back to Watchlist
+    function returnToWatchlist(movieId) {
+      const idx = watchedList.findIndex(m => m.id === movieId);
+      if (idx !== -1) {
+        const movie = watchedList.splice(idx, 1)[0];
+        delete movie.watchedAt;
+        delete movie.rating;
+        delete movie.note;
+
+        watchlist.unshift(movie);
+        saveWatchlist();
+        saveWatched();
+        renderWatchlist();
+        renderWatchedDrawer();
+        showToast(`"${movie.title}" izleme listesine geri alındı.`, "info");
+      }
+    }
+
+    // Save Rating & Memory Note
+    function rateWatchedMovie(movieId, rating) {
+      const movie = watchedList.find(m => m.id === movieId);
+      if (movie) {
+        movie.rating = rating;
+        saveWatched();
+        renderWatchedDrawer();
+        showToast(`Puan verildi: ${rating} Yıldız ⭐`, "success");
+      }
+    }
+
+    function saveMovieNote(movieId) {
+      const textarea = document.getElementById(`note-input-${movieId}`);
+      const movie = watchedList.find(m => m.id === movieId);
+      if (movie && textarea) {
+        movie.note = textarea.value.trim();
+        saveWatched();
+        showToast("Anı ve yorum kaydedildi! ❤️", "success");
+      }
+    }
+
+    function removeFromWatched(movieId) {
+      watchedList = watchedList.filter(m => m.id !== movieId);
+      saveWatched();
+      renderWatchedDrawer();
+      showToast("Film izlenenlerden silindi.", "info");
+    }
+
+    // Add Movie to Watchlist
+    function addToWatchlist(movie) {
+      if (watchlist.some(m => m.id === movie.id || m.title.toLowerCase() === movie.title.toLowerCase())) {
+        showToast("Bu film zaten izleme listenizde!", "info");
+        return;
+      }
+
+      watchlist.unshift(movie);
+      saveWatchlist();
+      renderWatchlist();
+      searchResults.classList.add('hidden');
+      searchInput.value = '';
+      showToast(`"${movie.title}" eklendi ❤️`, "success");
+    }
+
+    function removeFromWatchlist(id) {
+      watchlist = watchlist.filter(m => m.id !== id);
+      saveWatchlist();
+      renderWatchlist();
+      showToast("Film listeden çıkarıldı.", "info");
+    }
+
+    function clearWatchlist() {
+      if (watchlist.length === 0) return;
+      if (confirm("İzleme listesindeki tüm filmleri temizlemek istiyor musunuz?")) {
+        watchlist = [];
+        saveWatchlist();
+        renderWatchlist();
+        showToast("İzleme listesi temizlendi.", "info");
+      }
+    }
+
+    // Quick Dice Pick
+    function quickPickMovie() {
+      if (watchlist.length === 0) {
+        showToast("Hızlı öneri almak için listenizde film olmalı!", "info");
+        return;
+      }
+      const randomMovie = watchlist[Math.floor(Math.random() * watchlist.length)];
+      activeChosenMovie = randomMovie;
+      
+      // Open card selection directly with this movie
+      selectedRandomTriplet = [randomMovie, randomMovie, randomMovie];
+      openSelectionModal();
+      revealCard(0, randomMovie);
+    }
+
+    // Open Trailer Search
+    function watchTrailer(title) {
+      if (!title) return;
+      const query = encodeURIComponent(`${title} fragman dublaj altyazılı`);
+      window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank');
+    }
+
+    // Live Search Logic
+    function setupSearchListener() {
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        clearTimeout(searchDebounceTimer);
+
+        if (query.length < 2) {
+          searchResults.classList.add('hidden');
+          searchSpinner.classList.add('hidden');
+          return;
+        }
+
+        searchSpinner.classList.remove('hidden');
+
+        searchDebounceTimer = setTimeout(() => {
+          fetchMoviesFromOMDb(query);
+        }, 400);
+      });
+    }
+
+    async function fetchMoviesFromOMDb(query) {
+      const apiKey = "trilogy"; 
+      const url = `https://www.omdbapi.com/?s=${encodeURIComponent(query)}&type=movie&apikey=${apiKey}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        searchSpinner.classList.add('hidden');
+
+        if (data.Response === "True" && data.Search) {
+          renderSearchResults(data.Search);
+        } else {
+          renderCustomAddOption(query);
+        }
+      } catch (err) {
+        searchSpinner.classList.add('hidden');
+        renderCustomAddOption(query);
+      }
+    }
+
+    function renderSearchResults(movies) {
+      searchResults.innerHTML = '';
+      searchResults.classList.remove('hidden');
+
+      movies.slice(0, 6).forEach((item) => {
+        const div = document.createElement('div');
+        div.className = "p-3 hover:bg-darkcard cursor-pointer flex items-center gap-3 transition-colors";
+        
+        const poster = (item.Poster && item.Poster !== "N/A") 
+          ? item.Poster 
+          : "https://placehold.co/100x150/20252c/ffffff?text=Film";
+
+        div.innerHTML = `
+          <img src="${poster}" alt="${escapeHtml(item.Title)}" class="w-10 h-14 object-cover rounded shadow flex-shrink-0">
+          <div class="flex-grow min-w-0">
+            <h4 class="text-sm font-bold text-white truncate">${escapeHtml(item.Title)}</h4>
+            <p class="text-xs text-gray-400">${item.Year}</p>
+          </div>
+          <button class="bg-burgundy-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium hover:bg-burgundy-600 flex-shrink-0">
+            + Ekle
+          </button>
+        `;
+
+        div.onclick = async () => {
+          // Fetch Detailed Movie Info (Runtime, Plot, IMDb)
+          const detailUrl = `https://www.omdbapi.com/?i=${item.imdbID}&apikey=trilogy`;
+          let detailData = {};
+          try {
+            const detailRes = await fetch(detailUrl);
+            detailData = await detailRes.json();
+          } catch(e) {}
+
+          addToWatchlist({
+            id: item.imdbID || 'custom_' + Date.now(),
+            title: item.Title,
+            year: item.Year,
+            poster: poster,
+            genre: detailData.Genre || 'Sinema Filmi',
+            runtime: detailData.Runtime || '120 min',
+            imdbRating: detailData.imdbRating || 'N/A',
+            plot: detailData.Plot && detailData.Plot !== "N/A" ? detailData.Plot : 'Filme dair özet bilgi bulunamadı.'
+          });
+        };
+
+        searchResults.appendChild(div);
+      });
+    }
+
+    function renderCustomAddOption(query) {
+      searchResults.innerHTML = '';
+      searchResults.classList.remove('hidden');
+
+      const div = document.createElement('div');
+      div.className = "p-4 hover:bg-darkcard cursor-pointer text-center";
+      div.innerHTML = `
+        <p class="text-xs text-gray-400 mb-2">Aramaya uygun film bulunamadı.</p>
+        <span class="inline-block bg-burgundy-700 text-white text-xs px-4 py-2 rounded-xl font-bold hover:bg-burgundy-600 transition-all">
+          "${escapeHtml(query)}" Adıyla Ekle
+        </span>
+      `;
+
+      div.onclick = () => {
+        addToWatchlist({
+          id: 'manual_' + Date.now(),
+          title: query,
+          year: new Date().getFullYear().toString(),
+          poster: `https://placehold.co/300x450/20252c/ffffff?text=${encodeURIComponent(query)}`,
+          genre: 'Özel Eklendi',
+          runtime: '120 min',
+          imdbRating: '7.5',
+          plot: 'Sizler tarafından özel olarak eklenen harika bir film!'
+        });
+      };
+
+      searchResults.appendChild(div);
+    }
+
+    // ================= 3 CARDS SELECTION LOGIC =================
+    let selectedRandomTriplet = [];
+    let hasSelectedCard = false;
+
+    function openSelectionModal() {
+      if (watchlist.length < 3) {
+        showToast("Rastgele 3 kart oluşturabilmek için en az 3 film olmalı!", "info");
+        return;
+      }
+
+      const shuffled = [...watchlist].sort(() => 0.5 - Math.random());
+      selectedRandomTriplet = shuffled.slice(0, 3);
+      hasSelectedCard = false;
+      activeChosenMovie = null;
+
+      resultBanner.classList.add('hidden');
+      document.getElementById('modalSubtext').classList.remove('hidden');
+
+      renderClosedCards();
+      selectionModal.classList.remove('hidden');
+    }
+
+    function closeSelectionModal() {
+      selectionModal.classList.add('hidden');
+    }
+
+    function renderClosedCards() {
+      cardsContainer.innerHTML = '';
+
+      selectedRandomTriplet.forEach((movie, index) => {
+        const cardWrapper = document.createElement('div');
+        cardWrapper.className = "perspective-1000 h-80 sm:h-96 w-full cursor-pointer group";
+        cardWrapper.id = `card-wrapper-${index}`;
+
+        const posterSrc = (movie.poster && movie.poster !== "N/A") 
+          ? movie.poster 
+          : "https://placehold.co/300x450/20252c/ffffff?text=Film";
+
+        cardWrapper.innerHTML = `
+          <div class="card-inner" id="card-inner-${index}">
+            
+            <!-- CARD FRONT -->
+            <div class="card-front bg-gradient-to-br from-darkcard via-burgundy-950 to-darkpanel text-white p-6 flex flex-col items-center justify-between border-2 border-gray-700 group-hover:border-burgundy-500 transition-colors shadow-2xl">
+              <div class="w-full flex justify-between items-center text-gray-500 text-xs">
+                <i class="fa-solid fa-snowflake"></i>
+                <span class="font-serif tracking-widest uppercase text-[10px] text-gray-400">Kadolingo</span>
+                <i class="fa-solid fa-snowflake"></i>
+              </div>
+
+              <div class="my-auto text-center">
+                <div class="w-16 h-16 mx-auto rounded-full bg-burgundy-900/40 border border-burgundy-500/30 flex items-center justify-center text-amber-300 text-2xl shadow-inner mb-3 group-hover:scale-110 transition-transform">
+                  <i class="fa-solid fa-film"></i>
+                </div>
+                <h4 class="font-serif text-lg font-bold text-white tracking-wide">Şans Kartı ${index + 1}</h4>
+                <p class="text-[11px] text-gray-400 mt-1">Seçmek için tıkla</p>
+              </div>
+
+              <div class="w-full py-1.5 rounded-lg bg-black/40 text-[10px] text-amber-300/80 font-semibold tracking-wider uppercase border border-gray-800">
+                Aç ve Keşfet ✨
+              </div>
+            </div>
+
+            <!-- CARD BACK -->
+            <div class="card-back bg-darkcard text-white p-2 flex flex-col border-2 border-burgundy-500 overflow-hidden shadow-2xl">
+              <div class="relative w-full h-full rounded-xl overflow-hidden bg-black">
+                <img src="${posterSrc}" alt="${escapeHtml(movie.title)}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-3 text-left">
+                  <span class="text-[10px] font-bold text-amber-300 uppercase">SEÇİLEN FILM</span>
+                  <h3 class="font-serif text-base font-bold text-white line-clamp-1">${escapeHtml(movie.title)}</h3>
+                  <p class="text-xs text-gray-300">${movie.year}</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        `;
+
+        cardWrapper.onclick = () => revealCard(index, movie);
+        cardsContainer.appendChild(cardWrapper);
+      });
+    }
+
+    function revealCard(selectedIndex, movie) {
+      if (hasSelectedCard) return;
+      hasSelectedCard = true;
+      activeChosenMovie = movie;
+
+      const cardWrapper = document.getElementById(`card-wrapper-${selectedIndex}`);
+      if (cardWrapper) cardWrapper.classList.add('card-flipped');
+
+      document.getElementById('modalSubtext').classList.add('hidden');
+
+      setTimeout(() => {
+        document.getElementById('resultTitle').textContent = `🎉 Seçtiğiniz Film: ${movie.title}`;
+        
+        // Detailed Movie Information Banner
+        const formattedTime = formatRuntime(movie.runtime);
+        const plotText = movie.plot || 'Bu film için özet bilgi bulunmuyor.';
+        const ratingText = movie.imdbRating && movie.imdbRating !== "N/A" ? `⭐ IMDb: ${movie.imdbRating}/10` : '⭐ Değerlendirme Bulunmuyor';
+
+        document.getElementById('selectedMovieDetails').innerHTML = `
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 pb-3 border-b border-gray-700/80 font-medium">
+            <div><span class="text-gray-400 block text-[10px] uppercase">Süre</span> <span class="text-amber-400 font-bold"><i class="fa-solid fa-clock mr-1"></i>${formattedTime}</span></div>
+            <div><span class="text-gray-400 block text-[10px] uppercase">Yayın Yılı</span> <span class="text-white font-bold">${movie.year || 'Bilinmiyor'}</span></div>
+            <div class="col-span-2 sm:col-span-1"><span class="text-gray-400 block text-[10px] uppercase">Puan</span> <span class="text-amber-300 font-bold">${ratingText}</span></div>
+          </div>
+          
+          <div class="pt-1">
+            <span class="text-burgundy-400 font-bold block mb-1 uppercase text-[10px] tracking-wider">Tür</span>
+            <p class="text-gray-200 font-medium">${escapeHtml(movie.genre || 'Sinema Filmi')}</p>
+          </div>
+
+          <div class="pt-2">
+            <span class="text-burgundy-400 font-bold block mb-1 uppercase text-[10px] tracking-wider">Film Konusu / Özet</span>
+            <p class="text-gray-300 leading-relaxed italic bg-black/40 p-3 rounded-xl border border-gray-800">${escapeHtml(plotText)}</p>
+          </div>
+
+          <div class="pt-1 text-center text-amber-300/80 italic text-[11px]">
+            "Mısırları patlatın, ışıkları kapatın ve filmin tadını çıkarın! 🍿🎬"
+          </div>
+        `;
+
+        resultBanner.classList.remove('hidden');
+      }, 700);
+    }
+
+    function markSelectedAsWatched() {
+      if (activeChosenMovie) {
+        moveToWatched(activeChosenMovie.id);
+        closeSelectionModal();
+      }
+    }
+
+    // ================= STATS MODAL LOGIC =================
+    function openStatsModal() {
+      const totalWatched = watchedList.length;
+      let totalRatingSum = 0;
+      let ratedCount = 0;
+
+      watchedList.forEach(m => {
+        if (m.rating && m.rating > 0) {
+          totalRatingSum += m.rating;
+          ratedCount++;
+        }
+      });
+
+      const avgRating = ratedCount > 0 ? (totalRatingSum / ratedCount).toFixed(1) : '0.0';
+      const approxHours = Math.round(totalWatched * 1.8);
+
+      document.getElementById('statTotalWatched').textContent = `${totalWatched} Film`;
+      document.getElementById('statAvgRating').textContent = `${avgRating} / 5.0 ⭐`;
+      document.getElementById('statTotalHours').textContent = `~${approxHours} Saat`;
+
+      document.getElementById('statsModal').classList.remove('hidden');
+    }
+
+    function closeStatsModal() {
+      document.getElementById('statsModal').classList.add('hidden');
+    }
+
+    // Helper: Toast Notifications
+    function showToast(message, type = "info") {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toastMsg.textContent = message;
+
+      if (type === "success") {
+        toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+      } else {
+        toastIcon.className = "fa-solid fa-circle-info text-amber-300";
+      }
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    // Helper: HTML Escaping
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+  </script>
+</body>
+</html>
